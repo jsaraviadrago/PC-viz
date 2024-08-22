@@ -9,6 +9,7 @@ Con este video, se realizaron varias acciones y pruebas.
 1. Con OPENCV[[4]](#4) se separó en frames todo el video y se puede ver cada uno de ellos, que luego se guardan en un folder. 
 2. Se realizó un "annotation" de caras con PIL y mediapipe. Este proyecto se podría extender con deepface[[2]](#2) pero está en proceso.  
 3. Otro proyecto interesante que está acá es el uso de RT-DETR[[1]](#1) que gracias a Carlos Alarcón por sus excelente pudo hacerse posible, les recomiendo revisarlos en estos dos links[[3]](#3)[[5]](#5) 
+4. Adicionalmente, corté un video largo de Maradona y el gol con los ingleses para luego hacer la detección de personas. 
 
 <a id="1">[1]</a>
 Zhao Y, et al. (2024).
