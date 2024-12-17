@@ -42,12 +42,21 @@ def colorize_image(image_path, model):
 
     # Preprocess the L channel for the model
     l_channel_resized = cv2.resize(l_channel, (224, 224))  # Model expects 224x224 input
-    l_channel_resized = l_channel_resized - 50  # Subtract mean
+    l_channel_resized = np.clip(l_channel - 50, 0, 255) # Subtract mean make sure values are ok.
+
+    # Prepare the iput blob
     input_blob = cv2.dnn.blobFromImage(l_channel_resized)
 
     # Run the model
     model.setInput(input_blob)
-    ab_channels = model.forward()[0, :, :, :].transpose((1, 2, 0))  # Output ab channels
+    ab_channels = model.forward()[0, :, :, :].transpose((1, 2, 0)) # Extract AB channels
+
+    # Print AB channels with valid values
+    print(f"AB channel range: min={ab_channels.min()}, max={ab_channels.max()}")
+
+    # Check if AB channels contain valid values
+    if ab_channels.min() == 0 and ab_channels.max() == 0:
+        print("Warning: AB channels contain only zeros. Model output may be invalid.")
 
     # Resize ab channels to match the original image size
     ab_channels_resized = cv2.resize(ab_channels, (image.shape[1], image.shape[0]))
