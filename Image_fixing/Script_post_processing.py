@@ -31,14 +31,24 @@ def enhance_contrast(image):
     """
     Enhance the brightness and contrast of the output image using CLAHE.
     """
+    # Convert image to LAB color space
     lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
     l_channel, a_channel, b_channel = cv2.split(lab)
 
-    # Apply CLAHE to the L-channel
+    # Ensure L-channel is uint8 and apply CLAHE
+    l_channel = np.clip(l_channel, 0, 255).astype(np.uint8)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     l_channel = clahe.apply(l_channel)
 
-    # Merge enhanced L-channel back with A and B channels
+    # Ensure a_channel and b_channel match the type and size of l_channel
+    a_channel = a_channel.astype(np.uint8)
+    b_channel = b_channel.astype(np.uint8)
+
+    # Match sizes explicitly (in case of any minor mismatches)
+    a_channel = cv2.resize(a_channel, (l_channel.shape[1], l_channel.shape[0]))
+    b_channel = cv2.resize(b_channel, (l_channel.shape[1], l_channel.shape[0]))
+
+    # Merge the channels back together
     enhanced_lab = cv2.merge((l_channel, a_channel, b_channel))
     enhanced_bgr = cv2.cvtColor(enhanced_lab, cv2.COLOR_LAB2BGR)
 
