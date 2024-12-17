@@ -34,8 +34,10 @@ def enhance_contrast(image):
     lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
     l_channel, a_channel, b_channel = cv2.split(lab)
 
-    # Ensure L-channel is of type uint8
+    # Ensure all channels are of type uint8
     l_channel = np.clip(l_channel, 0, 255).astype(np.uint8)
+    a_channel = np.clip(a_channel, 0, 255).astype(np.uint8)
+    b_channel = np.clip(b_channel, 0, 255).astype(np.uint8)
 
     # Apply CLAHE to the L-channel
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
