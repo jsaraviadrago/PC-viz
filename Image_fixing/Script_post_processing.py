@@ -7,9 +7,9 @@ def load_colorization_model(model_dir):
     """
     Load the pre-trained colorization model from the given directory.
     """
-    prototxt = os.path.join(model_dir, '/home/juan-carlos/PycharmProjects/PC-viz/colorization/models/colorization_deploy_v2.prototxt')
-    model = os.path.join(model_dir, '/home/juan-carlos/PycharmProjects/PC-viz/colorization/models/colorization_release_v2.caffemodel')
-    cluster_points = os.path.join(model_dir, '/home/juan-carlos/PycharmProjects/PC-viz/colorization/resources/pts_in_hull.npy')
+    prototxt = os.path.join(model_dir, 'colorization_deploy_v2.prototxt')
+    model = os.path.join(model_dir, 'colorization_release_v2.caffemodel')
+    cluster_points = os.path.join(model_dir, '../resources/pts_in_hull.npy')
 
     # Verify the existence of model files
     for file_path in [prototxt, model, cluster_points]:
@@ -34,11 +34,6 @@ def enhance_contrast(image):
     lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
     l_channel, a_channel, b_channel = cv2.split(lab)
 
-    # Ensure all channels are of type uint8
-    l_channel = np.clip(l_channel, 0, 255).astype(np.uint8)
-    a_channel = np.clip(a_channel, 0, 255).astype(np.uint8)
-    b_channel = np.clip(b_channel, 0, 255).astype(np.uint8)
-
     # Apply CLAHE to the L-channel
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     l_channel = clahe.apply(l_channel)
@@ -48,7 +43,6 @@ def enhance_contrast(image):
     enhanced_bgr = cv2.cvtColor(enhanced_lab, cv2.COLOR_LAB2BGR)
 
     return enhanced_bgr
-
 
 
 def colorize_image(image_path, model):
@@ -67,33 +61,37 @@ def colorize_image(image_path, model):
     print("=== Debugging Input Image ===")
     print(f"L-channel range: min={l_channel.min()}, max={l_channel.max()}")
 
-    # Preprocess the L-channel: resize and subtract mean
-    l_channel_resized = cv2.resize(l_channel, (224, 224))  # Model expects 224x224 input
-    l_channel_resized = np.clip(l_channel_resized - 50, 0, 255)  # Ensure valid range
+    # Step 1: Normalize the L-channel for better dynamic range
+    l_channel_normalized = cv2.normalize(l_channel, None, 0, 255, cv2.NORM_MINMAX)
 
-    # Prepare the input blob
+    # Step 2: Preprocess the L-channel
+    l_channel_resized = cv2.resize(l_channel_normalized, (224, 224))  # Model expects 224x224 input
+    l_channel_resized = np.clip(l_channel_resized - 50, 0, 255)
+
+    # Step 3: Run the model
     input_blob = cv2.dnn.blobFromImage(l_channel_resized)
-
-    # Run the model
     model.setInput(input_blob)
-    ab_channels = model.forward()[0, :, :, :].transpose((1, 2, 0))  # Extract AB channels
+    ab_channels = model.forward()[0, :, :, :].transpose((1, 2, 0))
 
     print("=== Debugging AB Channels ===")
     print(f"AB channel range: min={ab_channels.min()}, max={ab_channels.max()}")
 
-    # Check AB channel validity
-    if ab_channels.min() == 0 and ab_channels.max() == 0:
-        print("Warning: AB channels contain only zeros. Model output may be invalid.")
-
-    # Resize AB channels to match the original image size
+    # Step 4: Amplify AB channels to boost color saturation
     ab_channels_resized = cv2.resize(ab_channels, (image.shape[1], image.shape[0]))
+    ab_channels_resized *= 2.0  # Amplify saturation
 
-    # Combine L and AB channels
+    # Step 5: Combine L and AB channels
     colorized_lab = np.concatenate((l_channel[:, :, np.newaxis], ab_channels_resized), axis=2)
     colorized_bgr = cv2.cvtColor(colorized_lab, cv2.COLOR_LAB2BGR)
 
-    # Enhance the output using CLAHE
-    colorized_bgr = enhance_contrast(colorized_bgr)
+    # Step 6: Post-process the output
+    colorized_bgr = enhance_contrast(colorized_bgr)  # Enhance brightness and contrast
+
+    # Optional: Sharpen the final output
+    kernel = np.array([[0, -1, 0],
+                       [-1, 5, -1],
+                       [0, -1, 0]])
+    colorized_bgr = cv2.filter2D(colorized_bgr, -1, kernel)
 
     # Clip values to ensure valid range
     colorized_bgr = np.clip(colorized_bgr, 0, 255).astype('uint8')
@@ -129,5 +127,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error during colorization: {e}")
         import traceback
-
         traceback.print_exc()
