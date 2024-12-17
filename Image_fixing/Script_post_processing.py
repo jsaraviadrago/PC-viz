@@ -9,7 +9,7 @@ def load_colorization_model(model_dir):
     """
     prototxt = os.path.join(model_dir, '/home/juan-carlos/PycharmProjects/PC-viz/colorization/models/colorization_deploy_v2.prototxt')
     model = os.path.join(model_dir, '/home/juan-carlos/PycharmProjects/PC-viz/colorization/models/colorization_release_v2.caffemodel')
-    cluster_points = os.path.join(model_dir, '/home/juan-carlos/PycharmProjects/PC-viz/colorization/resources/resources/pts_in_hull.npy')
+    cluster_points = os.path.join(model_dir, '/home/juan-carlos/PycharmProjects/PC-viz/colorization/resources/pts_in_hull.npy')
 
     # Verify the existence of model files
     for file_path in [prototxt, model, cluster_points]:
@@ -34,6 +34,9 @@ def enhance_contrast(image):
     lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
     l_channel, a_channel, b_channel = cv2.split(lab)
 
+    # Ensure L-channel is of type uint8
+    l_channel = np.clip(l_channel, 0, 255).astype(np.uint8)
+
     # Apply CLAHE to the L-channel
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     l_channel = clahe.apply(l_channel)
@@ -43,6 +46,7 @@ def enhance_contrast(image):
     enhanced_bgr = cv2.cvtColor(enhanced_lab, cv2.COLOR_LAB2BGR)
 
     return enhanced_bgr
+
 
 
 def colorize_image(image_path, model):
