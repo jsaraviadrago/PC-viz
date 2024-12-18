@@ -4,7 +4,7 @@ import numpy as np
 
 def print_image_statistics(image_path):
     """
-    Prints pixel statistics for the input image and its LAB Lightness channel.
+    Prints pixel statistics for the input image, including channel-wise color distribution.
     """
     # Load the input image
     image = cv2.imread(image_path)
@@ -19,7 +19,36 @@ def print_image_statistics(image_path):
     if len(image.shape) == 2 or image.shape[2] == 1:
         print("The image is grayscale.")
     else:
-        print("The image is color (BGR).")
+        # Split the image into Blue, Green, and Red channels
+        blue_channel, green_channel, red_channel = cv2.split(image)
+
+        # Calculate total pixels
+        total_pixels = image.shape[0] * image.shape[1]
+
+        # Calculate color channel percentages and pixel counts
+        blue_pixels = np.sum(blue_channel > 0)
+        green_pixels = np.sum(green_channel > 0)
+        red_pixels = np.sum(red_channel > 0)
+
+        blue_percentage = (blue_pixels / total_pixels) * 100
+        green_percentage = (green_pixels / total_pixels) * 100
+        red_percentage = (red_pixels / total_pixels) * 100
+
+        print("\n=== Color Channel Analysis ===")
+        print(f"Total Pixels: {total_pixels}")
+        print(f"Blue Pixels: {blue_pixels} ({blue_percentage:.2f}%)")
+        print(f"Green Pixels: {green_pixels} ({green_percentage:.2f}%)")
+        print(f"Red Pixels: {red_pixels} ({red_percentage:.2f}%)")
+
+        # Calculate average intensity for each channel
+        blue_avg = np.mean(blue_channel)
+        green_avg = np.mean(green_channel)
+        red_avg = np.mean(red_channel)
+
+        print("\n=== Channel Average Intensities ===")
+        print(f"Blue Channel Average: {blue_avg:.2f}")
+        print(f"Green Channel Average: {green_avg:.2f}")
+        print(f"Red Channel Average: {red_avg:.2f}")
 
     # Convert to LAB color space
     image_lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
